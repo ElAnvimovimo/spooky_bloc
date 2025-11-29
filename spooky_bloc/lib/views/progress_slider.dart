@@ -1,42 +1,72 @@
 import 'package:flutter/material.dart';
 
-class ProgressSlider extends StatelessWidget {
-  final Duration position, duration;
+class ProgressSlider extends StatefulWidget {
+  final Duration position;
+  final Duration duration;
   final Function(Duration) seek;
   final Color color;
 
-  const ProgressSlider(
-      {super.key,
-        required this.position,
-        required this.duration,
-        required this.seek,
-        required this.color});
+  const ProgressSlider({
+    Key? key,
+    required this.position,
+    required this.duration,
+    required this.seek,
+    required this.color,
+  }) : super(key: key);
+
+  @override
+  State<ProgressSlider> createState() => _ProgressSliderState();
+}
+
+class _ProgressSliderState extends State<ProgressSlider> {
+  bool _isDragging = false;
+  double _dragValue = 0.0;
 
   @override
   Widget build(BuildContext context) {
+    final double durationSeconds = widget.duration.inSeconds.toDouble();
+    final double positionSeconds = widget.position.inSeconds.toDouble();
+
+    final double max = durationSeconds > 0 ? durationSeconds : 1.0;
+    double value = _isDragging ? _dragValue : positionSeconds;
+
+    value = value.clamp(0.0, max);
+
     return SizedBox(
-      width: MediaQuery.of(context).size.width * .75,
-      //height: MediaQuery.of(context).size.height * .3,
+      width: MediaQuery.of(context).size.width * 0.85,
       child: SliderTheme(
         data: SliderThemeData(
-          thumbColor: color,
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 10),
-          activeTickMarkColor: color,
-          inactiveTickMarkColor: Color(0xffed6a5a),
-          activeTrackColor: color,
-          inactiveTrackColor: Color(0xffed6a5a),
-
+          trackHeight: 4,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+          overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
+          activeTrackColor: widget.color,
+          inactiveTrackColor: widget.color.withOpacity(0.3),
+          thumbColor: widget.color,
+          overlayColor: widget.color.withOpacity(0.2),
         ),
         child: Slider(
-          value: position.inSeconds.toDouble(),
-          max: duration.inSeconds.toDouble(),
-          min: 0,
-          onChanged: (value) {
-            seek(Duration(seconds: value.toInt()));
+          min: 0.0,
+          max: max,
+          value: value,
+          onChangeStart: (val) {
+            setState(() {
+              _isDragging = true;
+              _dragValue = val;
+            });
+          },
+          onChanged: (val) {
+            setState(() {
+              _dragValue = val;
+            });
+          },
+          onChangeEnd: (val) {
+            widget.seek(Duration(seconds: val.toInt()));
+            setState(() {
+              _isDragging = false;
+            });
           },
         ),
       ),
     );
   }
 }
-
